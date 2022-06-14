@@ -4,7 +4,7 @@
 ## 규칙
 
 - 기간: 22.06.13 ~ 22.07.10 
-- 프렌즈: Dale, Damagucci, Jee, Alex, Ocean, Pigbag, Selina, Eddy
+- 프렌즈: Dale, Damagucci, Jee, Alex, Ocean, Pigbag, Eddy
 
 
 ### 1. 매일 글 업로드하고 Pull Request ✏️
