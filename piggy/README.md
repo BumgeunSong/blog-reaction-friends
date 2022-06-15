@@ -17,3 +17,4 @@ Beck과 함께 향후 진행할 프로젝트의 구조에 대해서 서로의 �
 - 의견: 새로운 툴과 방식들의 필요성 Ex)Combine, ViewBinding 방식
 합의: 기능구성이 아닌 학습의 목표로 진행하기 때문에, 진도 효율보다는 학습에 중점, 따라서, 섞어서 사용해보기로 함.
 
+- [20.06.15] **Git Error(No Compare)** [관련 Wiki](https://github.com/SangHwi-Back/issue-tracker/wiki/Nothing-Compare-Issue-%ED%95%B4%EA%B2%B0)
