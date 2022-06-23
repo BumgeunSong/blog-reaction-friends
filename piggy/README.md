@@ -220,14 +220,80 @@ Plist는 위와같이 구성이 되어있고 Key값에 맞는 Value를 넣어주
 하지만, 그 답들은 하나하나 `독립적`이다.
 따라서, 이해를 하지 못하고 답을 구하면 결국 이렇게 삽질을 하게된다..
 
+## [22.06.23] AutoLayout 다시보기.
 
+### AutoLayout
+AutoLayout이란 상당히 편한 기능이다.
+다양한 크기의 스마트폰에 우리가 원하는 UI를 적절하게 보여줄 수 있다.
+하지만, 이런 AutoLayout을 잘 못 사용하면 오히려 UI가 이상하게 보일 수 있다.
 
+### 문제상황
+사실 이번 플젝을 진행하면서 맞닥드린 문제였다.
 
+> 대충.. title Label에 맞춰서 얼만큼 떨어지게 만든 AutoLayout..
 
+~~~swift
+titleLabel.snp.makeConstraints {
+    let insetValue = 120.0
+    $0.top.equalToSuperview().inset(insetValue)
+    $0.centerX.equalToSuperview()
+}
 
+userInfoInputStackView.snp.makeConstraints {
+    $0.top.equalTo(titleLabel.snp.bottom).offset(72.0)
+    $0.leading.trailing.equalToSuperview()
+}
+~~~
 
+아이폰 8(내가 생각하기에 요즘볼수 있는 가장 작은 스크린)로 시뮬레이터를 돌리니 `Issue Tracker title이 잘려서 보임`을 알 수 있었다. 
+왜냐하면, 내가 아무생각없이 하드코딩한 120.0과 같은 숫자들이 작은 스크린에서는 매우 큰 숫자가 될 수 있고 `설정해준 layout을 처리할수 없을만큼 큰 숫자인 경우`  AutoLayout들을 적절히 처리되지 못하고 이렇게 이상한 UI가 나온다.
 
+![](https://velog.velcdn.com/images/piggy_seob/post/055e5046-8c16-42ed-a62f-ea9aed29af1d/image.png)
 
+특히나, `하나하나 Layout이 맞물려 있는 상황`에서는 지금처럼 안좋은 UI를 만들어낼 수 있다.
 
+### 내가 생각한 해결법
+물론 내가 AutoLayout을 잘못 사용한 것 일 수도 있지만, 위와같은 문제를 해결하기 위한 방법으로는 `현재 Screen의 크기를 가지고와야만 해결 할 수있다고 생각했다.`
 
+1. UIScreen.main.bound로 현재 스크린의 크기를 가져온다.
+2. 스크린에서 UI가 위치해야할 비율을 구한다.(다행히 우리는 기획서가 있다.)
+3. 스크린의 크기에서 비율을 곱한 곳에 UI를 위치한다.
 
+~~~swift
+// 비율 from 기획서
+private struct LayoutRatio {
+static let titleTopInsetRatio: CGFloat = 165 / 812
+static let userInfoInputStackViewInsetRatio: CGFloat = 312 / 812
+
+static let loginButtonTopInsetRatio: CGFloat = 430 / 812
+static let loginButtonLeadingInsetRatio: CGFloat = 96 / 375
+
+...
+
+}
+// 스크린 크기
+let screenHeight = UIScreen.main.bounds.height
+let screenWeight = UIScreen.main.bounds.width
+
+// AutoLayout적용
+titleLabel.snp.makeConstraints {
+    $0.top.equalToSuperview()
+        .inset(screenHeight * LayoutRatio.titleTopInsetRatio)
+    $0.centerX.equalToSuperview()
+}
+        
+userInfoInputStackView.snp.makeConstraints {
+  $0.top.equalToSuperview()
+        .inset(screenHeight * LayoutRatio.userInfoInputStackViewInsetRatio)
+  $0.leading.trailing.equalToSuperview()
+}
+~~~
+
+![](https://velog.velcdn.com/images/piggy_seob/post/fa968b70-0b70-4d85-b189-e5ad112d9656/image.png)
+
+이제 잘나온다!
+물론 View안에 Label의 크기나 버튼안의 이미지크기도 비율을 설정해야 완벽하겠지만..
+
+### 배운점
+이제까지 그냥 당연하게 생각했던 Autolayout도 `잘` 하려면 쉽지 않다는걸 깨달았다.
+안다고 생각하는 것도 조금더 주의깊게 한번더 보자.
