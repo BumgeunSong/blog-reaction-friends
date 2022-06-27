@@ -321,7 +321,7 @@ DIContainer 어디선가 들어본 그녀석을 이번에 사용해보기로 했
 그렇기 떄문에 어짜피 구체타입을 어딘가 알아야한다면, DIContainer라는 것을 만들어서 그곳에 구체타입에 대한 의존성과 생성로직을 몽땅 넣어버리고 관리하자.라고 생각했고,DIConatiner가 작동하는 Flow는 다음과 같다고 생각했다.
 
 ### DIContainer의 Flow
-내가 잘 못 만든것일 수도 있지만, 대부분의 예제는 DIContaine가 작동하는 Flow는 이랬다.
+내가 잘 못 만든것일 수도 있지만, 대부분의 예제에서 DIContainer가 작동하는 Flow는 이랬다.
 
 등록
 ~~~swift
