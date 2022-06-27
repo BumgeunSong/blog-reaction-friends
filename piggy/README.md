@@ -310,3 +310,46 @@ userInfoInputStackView.snp.makeConstraints {
 
 3. 집중이 잘 안된다.
 분명 저번주 까지만 해도 집중할거라고 불태웠는데, 수료가 다가오니 오히려 붕뜨는 느낌이다.그래도 마무리는 아름답고 깨끗히 맺어보려고 노력한다.
+
+## [22.06.27] DIContainer의 Flow?
+
+### DIContainer?
+DIContainer 어디선가 들어본 그녀석을 이번에 사용해보기로 했다..
+내가 이해한 DIContainer의 사용 이유는 이렇다.
+우리가 Protocol로 의존성을 역전 시키고, 구체 타입을 밖에서 주입해줌으로써 의존성 주입을 해준다고 해도 어디선가는 구체타입을 알고 있어야하며, 생성 및 주입 해야한다.
+아무리 추상화를 한다고 해도 말이다.
+그렇기 떄문에 어짜피 구체타입을 어딘가 알아야한다면, DIContainer라는 것을 만들어서 그곳에 구체타입에 대한 의존성과 생성로직을 몽땅 넣어버리고 관리하자.라고 생각했고,DIConatiner가 작동하는 Flow는 다음과 같다고 생각했다.
+
+### DIContainer의 Flow
+내가 잘 못 만든것일 수도 있지만, 대부분의 예제는 DIContaine가 작동하는 Flow는 이랬다.
+
+등록
+~~~swift
+// UseCase 등록
+func registUseCaseDependencies() {
+    UseCaseContainer.shard.regist(instance: GithubLoginUseCase(model: GitHubLoginModel()))
+    UseCaseContainer.shard.regist(instance: AppleLoginUseCase(model: AppleLoginModel()))
+}
+~~~
+
+사용
+~~~swift
+private var githubLoginUseCase = UseCaseContainer.shard.resolve(type: GithubLoginUseCase.self)
+private var appleLoginUseCase = UseCaseContainer.shard.resolve(type: GithubLoginUseCase.self)
+~~~
+
+UseCase는 Model들을 인자로 받아서 init된다.
+init이 될때에는 구체적인 Model타입을 알아야하니 이 로직을 DIContainer를 이용해 분리한다.
+특히, DIContainer는 전역적으로 사용되는 경우가 많기 때문에 shared라는 싱글톤을 사용하곤 하는데, 이것이 Flow에서 내가 생각하지 못했던 한 단계를 더 만들어 버렸따.
+
+### 리뷰어님의 피드백과 문제점.
+발단은 리뷰어님의 피드백에서 시작되었다..
+
+>그리고 한 가지 궁금한게, AppDelegate에서 register하고 이후의 플로우에서 따로 GithubLoginUseCase와 AppleLoginUseCase를 메모리에서 해제시키는 코드는 찾지 못했는데요. 그렇게 되면 LoginUseCase는 앱을 사용하는 내내 싱글톤으로 메모리에 살아있는게 되는 걸텐데 이는 비효율적이라서, 혹시 처리하고 계신 곳이 없다면 처리가 필요할 것 같습니다.
+
+메모리...요?
+DIContainer는 앱 실행할때 몽땅 regist하고 쓰는게 아니었나...?
+
+
+
+
