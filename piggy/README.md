@@ -351,5 +351,83 @@ init이 될때에는 구체적인 Model타입을 알아야하니 이 로직을 D
 DIContainer는 앱 실행할때 몽땅 regist하고 쓰는게 아니었나...?
 
 
+## [22.06.28] DIContainer의 메모리 문제를 해결해보자.
+
+### 현재 구조의 문제점.
+현재 나의 DIContainer의 문제점은 앱을 실행할때 모두 구체타입을 `생성`해서 Dictionary에 넣어두는 것이다.
+생성되어 regist된 구체타입들은 싱글톤에서 영원히 살 것이고, 이는 당연히 메모리 측면에서 비효율적이게 된다.
+
+### 혼돈의 카오스
+이걸 어떻게 해결해야하나??
+사용한 후에는 값을 없애야하나??
+그러면 없앤 다음에 다시 쓰고싶을때는 어떻게 regist하지??
+지금은 AppDelegate에서 regist하는데.. 그러면 AppDelegate에서 regist를 하면 안되나?
+그러면 결국 생성로직을 분리하겠다는 초기 취지랑 안맞게 되는데??
+머릿속에 혼돈이 가득한 가운데 ..
+~~~
+구체 객체가 아닌 구체 객체를 return 하는 factory closure를 넣어서 register 해요. -Eddy God-
+~~~
+
+### 클로저를 활용하자!
+**갓 에디 가라사대 클로저를 활용하라 하심에 죄인은 코드에 적용해보기 시작한다.**
+
+Dictionary에 넣던 Value값을 Value값을 생성하는 클로저로 바꾸어 보았다.
+이제 Value값에 `생성`이 된 타입들이 없기 때문에 메모리상의 문제를 제거했다.
+
+~~~swift
+ typealias Creator = () -> Value
+ ...
+ var map: [ObjectIdentifier: Creator] = [:]
+~~~
+
+Regist
+생성된 구체타입을 따르는 프로토콜을 리턴하는 Closure를 regist한다.
+~~~swift
+mutating func regist<T: UseCaseResponsible>(type: T.Type, make: @escaping Creator) {
+    let identifier = ObjectIdentifier(type)
+    map[identifier] = make
+}
+~~~
+
+Resolve
+Regist된 Creator 클로저를 실행해서 프로토콜을 따르는 객체를 생성.
+~~~swift
+func resolve<T: UseCaseResponsible>(type: T.Type) -> Value? {
+  let identifier = ObjectIdentifier(type)
+  guard let useCaseCreator = map[identifier] else { return nil }
+  return useCaseCreator()
+}
+~~~
+
+실제구현부
+Regist: Type을 키값으로 구체타입을 리턴하는 Closure를 regist
+~~~swift
+func registUseCaseDependencies() {
+    UseCaseContainer.shared.regist(type: GithubLoginUseCase.self) {
+        return GithubLoginUseCase(model: GitHubLoginModel())
+    }
+~~~
+
+Resolve: Type을 키값으로 Creator를 실행한 값 가져오기 및 사용
+~~~swift
+private var githubLoginUseCaseCreator = UseCaseContainer.shared.resolve(type: GithubLoginUseCase.self)
+~~~
+
+~~~swift
+func request(_ bindable: ViewBindable, param: Any?) {
+  guard let loginType = param as? LoginType else { return }
+
+  switch loginType {
+  case .gitHub:
+      guard let useCase = githubLoginUseCase else { return }
+      useCase.request { loginURL in
+          self.output(loginURL, bindable)
+      }
+~~~
+
+### 배운점
+- DIContainer에 대해 조금 더 알게 됬다.
+- 역시나 로직이 좀더 복잡해져서 안그래도 보기 힘들었던 DI였는데.. 더 복잡해진기분이다.
+- 거마워요 에디.
 
 
