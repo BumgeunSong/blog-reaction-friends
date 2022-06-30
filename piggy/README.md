@@ -430,4 +430,94 @@ func request(_ bindable: ViewBindable, param: Any?) {
 - 역시나 로직이 좀더 복잡해져서 안그래도 보기 힘들었던 DI였는데.. 더 복잡해진기분이다.
 - 거마워요 에디.
 
+## [22.06.29] Protocol Extension 이용하기
 
+### Protocol Extension
+당연하게도 Struct나 Class 처럼, Protocol도 Extension이 가능하다.
+다만, `Protocol의 Extension은 Struct나 Class와는 조금 다르다.`
+
+예제를 통해 살펴보자.
+여기 변수와 메서드를 하나씩 가진 Protocol이 있고 이를 따르는 Class A가 있다.
+~~~swift
+protocol SomeProtocol {
+    var a: String { get }
+    func printSomthing()
+}
+
+class A: SomeProtocol {  //Type 'A' does not conform to protocol 'SomeProtocol'
+    
+}
+~~~
+여기서 SomeProtocol에 선언한 변수나 함수를 구현하지 않는다면 컴파일러는 protocol을 준수해달라고 징징거리기 시작할것이다.
+
+하지만, 프로토콜의 Extension에 함수와 변수를 선언한다면 에러가 나지않는다.
+
+Protocol에는 추상화된 값을 넣지만, Protocol의 Extension에는 실제 구현부를 넣어야 하고 이는 마치 `Class를 상속받은거 처럼`(물론 완벽히 같진 않다.)
+해당 Protocol을 채택하는 객체에게 Extension의 기능을 가지게 한다.
+~~~swift
+protocol SomeProtocol {
+//    var a: String { get }
+//    func printSomthing()
+}
+
+extension SomeProtocol {
+    var a: String {
+        return "2022 iOS Members 🔥"
+    }
+    func printSomething() {
+        print("Fighting!")
+    }
+}
+
+class A: SomeProtocol { // No compile Error
+    
+}
+~~~
+
+### 사용 예시
+Protocol의 Extension을 활용하는 방법은 무궁무진해서 다 적기 힘들지만, 내가 느끼기에 좀더 활용성이 높아 보이는 것은 `associatedtype` 활용할 때이다.
+
+예를 들어서 SomeProtocol에 `associatedtype`이 있는데 이 타입에 따라 protocol을 채택하는 객체들의 행동을 다르게 주고싶다. 고 한다면..
+
+~~~swift
+import Foundation
+protocol SomeProtocol {
+    associatedtype Value
+}
+
+extension SomeProtocol where Value == String {
+    var a: String {
+        return "2022 iOS Members 🔥"
+    }
+    func printSomething() {
+        print("\(a) Fighting!")
+    }
+}
+
+extension SomeProtocol where Value == Int {
+    var a: String {
+        return "2022 iOS Members 🔥"
+    }
+    func printSomething() {
+        print("\(a) Forever!")
+    }
+}
+
+class A: SomeProtocol {
+    typealias Value = String
+}
+
+class B: SomeProtocol {
+    typealias Value = Int
+}
+
+let a = A()
+let b = B()
+
+a.printSomething() // 2022 iOS Member 🔥 Fighting!
+b.printSomething() // 2022 iOS Member 🔥 Forever!
+
+~~~
+
+- 장점?
+지금은 아주 단순한 예제이기 때문에 그냥 구현 코드만 구체타입에서 Protocol로 옮긴것 처럼 보이지만 만약, 구체타입안에 제네릭이 있는 좀 복잡한 구조라면 associatedType과 함꼐 코드의 효율성을 높일 수 있을 것 같다.
