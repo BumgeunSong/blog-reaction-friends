@@ -541,7 +541,7 @@ URLSessionDelegate는 여러 이벤트가 있다. willCacheResponse, willPerform
 
 
 
-## 결론
+### 여기까지 결과
 
 위치 검색 기능으로 다시 돌아오자. 
 
@@ -554,3 +554,248 @@ URLSessionDelegate는 여러 이벤트가 있다. willCacheResponse, willPerform
 코드를 리팩토링한 후 구조는 이렇게 변했다.
 
 ![before](https://user-images.githubusercontent.com/17468015/173010397-bb277c9f-6a9a-4246-bf66-4598bf070e90.png)
+
+
+## 3. 객체 간 의존성 추상화하고 DI Container로 주입하기
+
+뷰 컨트롤러에서 많은 로직을 분리했을 때 좋은 점 중 하나는, 바로 단위 테스트가 쉬워진다는 것이다. `UIViewController`는 `UIKit`에 의존한다. `UIView`와 강하게 결합돼있다. 테스트를 하기가 까다롭다. 
+
+하지만 뷰 컨트롤러에서 로직을 많이 분리하면, `UIKit`에 의존하지 않는 로직이 많이 생긴다. 그 부분을 따로 테스트할 수 있다.
+
+이제 각 객체가 잘 작동하는지 테스트를 해보자.
+
+현재는 상위 컨트롤러가 하위 컨트롤러에게 의존한다. 하위 컨트롤러는 데이터 로딩 모델에게 의존한다. 
+
+먼저 하위 컨트롤러를 테스트한다고 가정하자. 그러면 데이터를 불러오는 데이터 로딩 모델에 대한 의존성을 분리해야한다. 
+
+왜냐고? 데이터 로딩 모델 의존성을 그대로 두고, 하위 컨트롤러의 메서드를 실행한다고 생각해보자. 직접 HTTP 요청을 하는 것까지 우리가 테스트하는 '단위'에 들어가버린다. 네트워크 요청이 포함된 테스트는 느리고, 외부의 영향을 받아 결과가 달라질 수 있다.
+
+의존성을 분리하는 가장 쉬운 방법은? 
+
+의존성을 추상화하는 것이다. 다시 말해 테스트 대상이 구체 타입이 아닌 추상 타입을 사용하도록 한다. 
+
+**[Before]** `DataSource` -> `DataLoading`
+
+**[After]** `DataSource` -> `DataLoadingProtocol` <- `DataLoading`
+
+
+의존성을 주입할 수 있는 인터페이스를 열어준다. (생성자, 메서드, 프로퍼티) 
+
+테스트 대상 객체를 사용하는 쪽에서 구체 타입을 집어넣어줄 수 있도록 만든다. 다시 말해, **의존성을 주입**할 수 있게 만든다.
+
+추상 타입으로 만들고, 외부에서 갈아끼울 수 있도록 만들면, 이제 사용하는 시점 (테스트하는 시점)에 서로 다른 구체 객체를 넣어서 실행시킬 수 있다. 
+
+테스트 시점에 실제 네트워크 요청을 하지 않는 가짜 객체 (Test Double)을 넣어주면 된다.
+
+'의존성 역전'은 객체 간 의존성을 런타임에 갈아끼울 수 있도록 만든다. 덕분에 객체 간 결합도를 낮아진다. 테스트를 하기 쉬워진다.
+
+### 1. 프로토콜로 의존성 추상화하기 (의존성 역전)
+
+먼저 데이터를 불러오는 코드를 추상화한다. 
+
+추천 장소를 불러오는 모듈을 예로 들어보자. 
+
+추천 장소를 불러오는 모듈의 '책임'은 다음과 같다.
+
+- **현재 위치**를 넣으면 **추천 장소를 불러와서 저장**하고 비동기로 알려준다. 
+`func loadRecommendation(for location: Location, then completion: @escaping () -> Void)` 
+- 콜렉션 뷰를 구성하기 위한 **전체 데이터(Place)의 갯수**를 알려준다. 
+`var count: Int`
+- **N번째 장소(Place)의 데이터**를 반환한다. 
+`subscript(index: Int) -> Place?`
+
+
+```swift
+struct DefaultRecommendator {
+
+    private let httpService: HTTPRecommandService
+    private var recommendationData = Box(value: [Place]())
+
+    var count: Int {
+        recommendationData.value.count
+    }
+    
+    subscript(index: Int) -> Place? {
+        guard (0..<recommendationData.value.count).contains(index) else { return nil }
+        return recommendationData.value[index]
+    }
+    
+    init(httpService: HTTPRecommandService) {
+        self.httpService = httpService
+    }
+    
+    mutating func loadRecommendation(for location: Location, then completion: @escaping () -> Void) {
+        let recommendationData = recommendationData
+        httpService.getRecommendation(for: location) { places in
+            if let places = places {
+                recommendationData.value = places
+            }
+            completion()
+        }
+    }
+}
+
+```
+
+(HttpService는 API 요청을 실행하는 모듈을 추상화한 것이다. 이 부분도 의존성 역전을 시켜두었지만 분량상 생략한다.)
+
+위의 코드를 이제 추상 타입으로 만들어보자.`PlaceRecommanding`으로 따로 분리한다.
+
+```swift
+protocol PlaceRecommanding {
+    var count: Int { get }
+    subscript(index: Int) -> Place? { get }
+    mutating func loadRecommendation(for location: Location, then completion: @escaping () -> Void)
+} 
+```
+
+`LocationSearchRecommendationController`로 가보자. 이 컨트롤러는 `PlaceRecommanding`를 사용하는 쪽이 된다. 
+
+인스턴스 변수로 `var dependency: PlaceRecommanding?` 를 선언한다. 추상 타입이다.  
+
+생성자를 통해 해당 인스턴스 변수에 들어갈 구체 타입을 넣어준다. **생성자를 눈여겨보자.**
+
+
+```swift
+class LocationSearchRecommendationController: NSObject, UICollectionViewDataSource, UICollectionViewDelegate, UICollectionViewDelegateFlowLayout  {
+    
+    weak var delegate: LocationSearchRecommendationControllerDelegate?
+    
+    private var dependency: PlaceRecommanding?
+    
+    init(dependency: PlaceRecommanding) {
+        self.dependency = dependency
+        super.init()
+    }
+    
+    func getRecommendation() {
+        let location = Location.makeRandomInKR()
+        
+        dependency?.loadRecommendation(for: location) { [weak self] in
+            self?.delegate?.didLoadData()
+        }
+    }
+    
+    // MARK: - UICollectionViewDataSource
+    
+    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+        dependency?.count ?? 0
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: RecommendedPlaceCell.reuseIdentifier, for: indexPath) as? RecommendedPlaceCell else { return UICollectionViewCell() }
+        
+        guard let data = dependency?[indexPath.item] else { return UICollectionViewCell() }
+        
+        cell.setContent(data)
+        return cell
+    }
+```
+
+이제 컨트롤러와 데이터 로딩 모델은 둘다 프로토콜 (추상 타입)에 의존하게 되었다. 
+
+이런 식으로 3개 컨트롤러에 모두 적용해주었. 이 그림을 보면 이해가 쉽다.
+
+![inversion](https://github.com/BumgeunSong/blog-reaction-friends/blob/main/eddy/Inversion.png?raw=true)
+
+**초록색은 추상 타입,** **주황색은 구체 타입**이다.
+
+각각의 컨트롤러는 프로토콜에 의존해 데이터를 불러온다. 각 모델은 프로토콜을 채택한다.
+
+### 2. DI Container로 의존성 주입하기
+
+의존성을 추상화했으니, 실제로 런타임에 구체 객체를 넣어줘야 한다. 
+`LocationSearchRecommendationController`가 `PlaceRecommanding` 타입을 필요로 한다. 그러니`PlaceRecommanding`을 채택한 구체 객체가 어떤 시점에든 들어가줘야 제대로 작동이 된다.
+
+이걸 의존성 주입이라고 한다.
+
+> 근데 의존성을 넣어주는 책임은 어떤 객체가 담당해야할까?
+
+쉽게 떠오르는 건, 상위의 `LocationSearchVC`다. 아래 빨간색으로 표시된 객체다.
+
+![inversion_highlight](https://github.com/BumgeunSong/blog-reaction-friends/blob/main/eddy/inversion_highlight.png?raw=true)
+
+`LocationSearchVC`가 `RecommendationController`를 생성할 때, `Recommendator`라는 구체 객체를 인자로 넣어준다. 
+
+`Recommendator`도 `HTTPRecommandService`에 의존한다. `Recommendator`를 생성할 때는 `ResponseSuccessStub`이라는 테스트용 객체를 넣어준다.
+
+이런 코드가 나온다.
+
+```swift
+private var recommendationController = LocationSearchRecommendationController(
+	dependency: Recommendator(
+    	httpService: ResponseSuccessStub()
+    )
+)
+``` 
+
+
+`LocationSearchVC`가 결국 구체 타입을 지정해주고 있다. 다른 말로 하면 `LocationSearchVC`는 구체 타입들과 강하게 결합해있다. 
+
+강하게 결합되어있다는 게 무슨 뜻이냐고? 
+
+구체 타입을 갈아끼워줄 상황을 생각해보자. 우리가 LocationVC의 코드를 고쳐야 하는가? 그러면 LocationVC가 구체 타입들과 결합된 것이다.
+
+LocationVC가 모르게, 그 상위에 있는 VC에서 해야할까? 
+
+그래도 LocationVC의 상위 객체는 구체 객체를 직접 알아야 한다. 마치 수건 돌리기처럼, 의존성을 위로 패스하는 방법밖에 되지 않는다.
+
+그러니까 상황을 요약하자면 다음과 같다.
+
+> 어디선가는 구체 타입을 주입해줘야 한다. 
+근데 구체 타입을 주입해주는 객체는 구체 타입에 결합이 된다?
+
+여기서 주입을 다시한번 설명하고 넘어가자. 
+
+상위 객체가 필요한 의존성을 추상 타입으로 정의한다. 그 안에 하위 구체 타입을 넣어준다. 생성자 혹은 프로터피를 사용해서.
+
+앱의 이곳 저곳에서 적당히 주입을 할 수도 있다. 지금은 크게 상관없을지 모른다. 
+
+하지만 프로젝트가 복잡해진다면? 
+
+의존성 주입 로직이 여러 곳에 흩뿌려진다. 이해하기 힘들다. 강하게 결합되는 부분도 앱의 여러 객체에 걸쳐 생긴다. 
+
+이걸 막기 위해서 우리는 깔끔하게, 앱 전체의 모-든 의존성 주입을 책임지는 별도 객체를 만든다. 
+
+이걸 Dependency Injection Container, **DI Container**라고 부른다. 
+
+DI Container는 특정 추상 타입을 필요로 하는 A 객체가 있을 때, 특정 추상 타입을 따르는 구체 타입 인스턴스를 생성해서 A 객체에 주입하는 역할을 담당한다.
+
+다시 말해, 의존성을 해결해준다. 이것을 'resolve'한다고 표현한다. 
+
+하위 객체들은, 구체 객체에 대해서 전혀 몰라도 된다 내가 가진 의존성(추상 타입)의 정보만 넘긴다. DI Container에서 알아서 구체 객체를 넣어주게 된다.
+
+아까 등장했던 이 코드를 다시보자.
+
+```swift
+private var recommendationController = LocationSearchRecommendationController(
+	dependency: Recommendator(
+    	httpService: ResponseSuccessStub()
+    )
+)
+``` 
+
+DI Container를 사용하면 이렇게 바뀐다.
+
+```swift
+private var recommendationController: LocationSearchRecommendationController?
+
+override func viewDidLoad() {
+    super.viewDidLoad()
+    recommendationController = container.resolve(LocationSearchRecommendationController.self)
+}
+```
+
+DI Container는 직접 만들 수도 있다. 하지만 대부분 서드 파티 라이브러리에서 잘 구현을 해놓았다. Swinject가 가장 인기있는 라이브러리 중 하나고, 그 외에도 많다. 
+
+DI Container의 원리나 사용법까지는 주제를 벗어나니까, 다음에 다시 다뤄보도록 하자!
+
+
+## 요약 정리
+
+- 이번 프로젝트에서는 리팩토링을 의식적으로 연습했다.
+- 리팩토링 대상은 위치를 선택해 숙박을 검색하는 기능이다.
+- 첫번째, ViewController에서 **데이터 소스와 데이터 로딩을 분리**했다.
+- 두번째, `UICollectionViewDelegate`를 분리했을 때 오히려 결합도가 높아져서, DataSource에 합쳤다.
+- 세번쨰, **객체 간 의존성을 추상화**하고 DI Container로 주입했다.
+- 결과적으로 ViewController는 가벼워졌고, 뚜렷한 책임을 가진 작은 객체로 나눌 수 있었으며, 런타임에 쉽게 의존성을 갈아끼울 수 있게 됐다.
