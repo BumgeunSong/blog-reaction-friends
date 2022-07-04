@@ -327,7 +327,7 @@ static func createYellowSection() -> NSCollectionLayoutSection {
 
 
 
-<img src="https://tva1.sinaimg.cn/large/e6c9d24egy1h3v4zq21aog20gf0zk4qp.gif" height="600">
+<img src="https://tva1.sinaimg.cn/large/e6c9d24egy1h3v4zq21aog20gf0zk4qp.gif" width="300" height="600">
 
 
 
@@ -393,4 +393,4 @@ static func createYellowSection() -> NSCollectionLayoutSection {
     }
 ```
 
-<img src="https://tva1.sinaimg.cn/large/e6c9d24egy1h3v5ljz066g20gf0zke81.gif" height="600">
+<img src="https://tva1.sinaimg.cn/large/e6c9d24egy1h3v5ljz066g20gf0zke81.gif" width="300" height="600">
