@@ -521,3 +521,50 @@ b.printSomething() // 2022 iOS Member 🔥 Forever!
 
 - 장점?
 지금은 아주 단순한 예제이기 때문에 그냥 구현 코드만 구체타입에서 Protocol로 옮긴것 처럼 보이지만 만약, 구체타입안에 제네릭이 있는 좀 복잡한 구조라면 associatedType과 함꼐 코드의 효율성을 높일 수 있을 것 같다.
+
+
+## [22.07.05] RxSwift 시작하기.
+
+그놈이다.
+채용공고를 눈팅할 때마다 우대사항으로 있던놈.
+이제는 진짜 배울때가 된 것 같아 예전에 사놓고 안 본 듀토리얼을 제 나름대로 해석해서 써봤습니다.
+
+### RxSwift란?
+Rx + Swift가 합쳐진 말이다.
+Swift는 알겠고.. Rx는?
+Rx는 다시 Reactive Extension의 줄임말인데, `관찰 가능한 시퀸스`를 사용하여 `비동기식 및 이벤트 기반 프로그램`을 구성하기 위한 라이브러리라고 한다.
+관찰 가능한 시퀸스? 비동기식 및 이벤트 기반? 🤯 뜻을 생각해 보면서 구성요소를 살펴보자.
+
+### RxSwift의 구성요소
+- Observable - Rx의 기반
+위 에서 Rx의 정의 중에 `관찰 가능한` 시퀸스라고 하였다.
+이를 대충 영어로 번역하면 Observable일 것이기 때문에 이러한 이름이 지어지지 않았나 싶다.
+`시퀸스란`, 개개인의 타입을 하나씩 순회할 수 있는 타입으로 Swift의 Array와 흡사하다.
+따라서, `Observable이란 관찰 가능한 배열`의 형태를 띈 무엇인가구나~ 라고 생각했다.
+기본 형태는 이런 모양이며 다음과 같은 기능을 한다.
+  ~~~swift
+  Observable<T>
+  ~~~
+1. Generic T형태의 데이터 SnapShot을 전달 할 수 있는 일련의 이벤트를 `비동기적으로 생성`
+2. 3가지 형태의 Event를 생성한다.
+    ~~~swift
+    enum Event<Element> {
+        case next(Element)            // 시퀸스의 다음 element
+        case error(Swift.Error)        // 시퀸스가 실패했을때
+        case completed                // 시퀸스가 성공적으로 끝났을때
+    }
+    ~~~
+3. 관찰가능한(observable) Event를 생성하면 관찰자(observer)가 보는 방식대로 진행 되게 된다.
+
+- Operator - 연산자
+    말 그대로 연산자이다.
+    좀더 복잡한 연산을 도와주어 Element들을 가공하는데 도움을 준다.
+    마치 +, -, * 등을 조합해서 사칙연산을 하듯이.
+    Observable이 Swift의 Array와 같은 시퀸스이기 때문에, map, filter 등과 같이 Array에 주로 쓰던 연산자들이 대표적이다.
+
+- Schedular ≒ GCD?
+    DispatchQueue와 비슷한 역할을 하지만, 훨씬 쓰기 쉽게 만들어 놨다고 함.
+    이미 많은 Schedular를 잘 만들어 놔서 개발자가 직접 Schedular를 생성할 일은 잘 없다.
+    자주쓰는 DispatchQueue구문들 예를 들어 DispatchQueue.main.aysnc 와 같은 것들을 미리 정의해 놓은게 아닌가 싶다.
+![](https://velog.velcdn.com/images/piggy_seob/post/e38d9234-ab02-4e47-b149-e637ce389524/image.png) 
+[이미지 출처](https://www.raywenderlich.com/13285844-rxswift-reactive-programming-with-swift-update-now-available)
