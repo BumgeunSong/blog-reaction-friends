@@ -1,4 +1,4 @@
-# Piggy
+s# Piggy
 
 ## [20.06.13] **정규표현식** [블로그](https://seob-p.tistory.com/21)
 
@@ -568,3 +568,42 @@ Rx는 다시 Reactive Extension의 줄임말인데, `관찰 가능한 시퀸스`
     자주쓰는 DispatchQueue구문들 예를 들어 DispatchQueue.main.aysnc 와 같은 것들을 미리 정의해 놓은게 아닌가 싶다.
 ![](https://velog.velcdn.com/images/piggy_seob/post/e38d9234-ab02-4e47-b149-e637ce389524/image.png) 
 [이미지 출처](https://www.raywenderlich.com/13285844-rxswift-reactive-programming-with-swift-update-now-available)
+
+
+## [22.07.06] RxSwift(trait)
+
+### Trait
+Rxswift의 Observable중에는 가독성을 위해서 좀더 좁은 범위의 Observable이 있다.
+이런 Observable들을 trait라고 한다.
+Single, Maybe, Completable이 바로 trait다.
+기존의 ObserVable에 asSingle(), asMaybe() 등의 메서드를 사용하면 타입을 바꿀수도 있다. (단, Competeable은 안됨.)
+
+### Single
+Single은 Success 혹은 Error 이벤트를 방출하는 Observable이다.
+여기서 Success는 Observable의 OnNext와 Completed를 합친 것과 같다.
+`정확히 한 가지 요소만 방출할 때 유리함.`
+Ex) 디크스에서 파일 가져오기와 같이 작업이 Success냐 Error냐 나누어지는 작업을 할때
+- 주의
+single을 subscribe를 통해 이벤트가 두 번이상 방출되는지 확인하면 Error가 날 수 있음.
+
+### Maybe
+Single과 비슷하지만 아무런 값도 방출하지 않는 Completed 이벤트가 추가되어 있다.
+`그럼 Single만 쓰면 되지않나..??`
+예를 들어 사진을 가지고 있는 포토앨범이 있다고 쳐보자.
+그곳에서 만든 앨범명은 UserDefault에 저장이 된다.
+해당 앨범명으로 앨범을 열고 작업을 하게 될 것이다.
+이 때, 앨범명이 있다면 아무런 값을 방출하지 않는 Completed를 방출하면 될것이고,
+앨범명이 UserDefault에 없다면 새로운 값과 함께 Success를 방출하면 될 것이다.
+이렇게 해당 이벤트에 값을 방출 할 수도 있고, 안하고 성공만 표시할수 있기 때문에(그래서 maybe인가?) 흐름을 제어 할 수 있다고 한다.
+
+### Completable
+Completed 혹은 Error만을 방출한다.
+따라서, 어떠한 값을 방출하지는 않는다.
+`값을 방출하지 않는데 쓸대가 있나..?`
+단순히, 작업의 성공여부를 판단하여 일의 순서를 정할때 사용하기 좋다고 한다.
+예를 들어 background에서 작업이 완료가 되면 자동저장이 되는 기능이 있다고 해보자.
+이 때는 어떠한 값도 방출이 될 필요는 없다.
+단순히 저장이 되었으면 되었으면 저장이 된 노티를 띄우고, 뭔가 에러가 났다면 에러 노티를 띄우면 된다.
+
+- 주의
+Completed는 생성을 하고 싶다면 create 메서드를 이용해서 생성할 수 밖에 없다.
