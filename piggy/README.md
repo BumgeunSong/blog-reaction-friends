@@ -607,3 +607,87 @@ Completed 혹은 Error만을 방출한다.
 
 - 주의
 Completed는 생성을 하고 싶다면 create 메서드를 이용해서 생성할 수 밖에 없다.
+
+[220707] DP(Dynamic Programming)
+
+### Dynamic Programming(동적계획법)
+동적 계획법이란.. 큰문제를 작은 문제로 나누어 해결하는 알고리즘 중에 하나이며,
+`하나의 문제를 단 한번만 풀도록 해서 효율성을 높이는 알고리즘`이다.
+처음에 봤을때 답도 없던 이녀석을 이해하기 위해 피보나치의 수 문제를 통해, 조금이나마 이해하려 시도해봤다.
+
+### 피보나치의 수
+피보나치의 수는 정의보다는 숫자를 보면 이해하기 쉽다.
+먼저 숫자 0 과 1을 준다. [0, 1]
+그리고 다음 숫자는 0 과 1을 더한 숫자 1을 넣는다. [0, 1, 1]
+다음 숫자는 1과 1을 더한다 [0, 1, 1, 2] 
+...
+이런 식으로 N번째 피보나치 숫자는 N-2 + N-1 번째 숫자를 더한 값으로 생성되는 배열이다. 
+
+### 피보나치의 수 구하는 방법
+N번째 피보나치 숫자를 구하고 싶다고 했을 때 구할 수 있는 방법은 3가지가 있다.
+1. 재귀
+~~~swift
+ //recursive
+func solution(_ n: Int) -> Int {  
+    if n == 0 || n == 1 {        // 이 값이 나올때 까지 계속 재귀를 돌것임.
+        return n
+    }
+    let n = solution(n-1) + (solution(n-2)) // 재귀도는 부분
+    return n
+}
+~~~
+위 방식은 단순하지만?(처음엔 이것도 어려웠다) 시간복잡도가 N의 제곱이라는 아주 안좋은 수치를 가지고 있다.
+
+2. recursive with DP
+~~~swift
+ //recursive Dynamic(top down)             // Call stack Depth Error 주의
+func solution(_ n: Int) -> Int {
+    if n == 1 || n == 0 {
+        return n
+    }
+
+    var fiboArray = [0, 1]
+
+    if n < fiboArray.count {    // 이 구문이 실행이 된다는 것은 fiboArray에 0,1 활용할 값이 있다는 뜻
+        return fiboArray[n]
+    }
+
+    let n = solution(n - 1) + solution(n - 2)
+    fiboArray.append(n)            // 새로운 값이 있다면 추가
+    return n
+}
+~~~
+재귀함수에 DP를 섞은 모습이다.
+재귀와 매우 흡사하나 fiboArray라는 배열이 생겼고 배열에서 값을 리턴하는 것을 볼 수 있다.
+`DP는 한번 계산한 것을 다시 계산 하지 않음으로써 효율을 높이는 알고리즘`이라고 했다.
+fiboArray에 결과값들을 저장하고 그 값들을 활용해서 시간복잡도를 낮추는 것이다.
+이렇게 fiboArray같은 곳에 값을 저장하는 것을 `메모제이션`이라고도 한다더라~
+이를 통해 시간복잡도는 O(N)까지 내려간다.
+큰값부터 구해서 내려오기 떄문에 top down 이라고도 하며, 이로인해 Call stack Error가 날수있다.
+
+
+3. for loop with DP
+~~~swift
+// Dynamic with for loop(bottom up)
+func solution(_ n: Int) -> Int {
+    if n == 1 || n == 0 {
+        return n
+    }
+    var fiboArray:[Int] = [0, 1]
+
+    for i in 2...n {
+        fiboArray.append((fiboArray[i-1] + fiboArray[i-2]))
+    }
+
+    return fiboArray[n]
+}
+~~~
+재귀를 사용하지 않고 구현하는 방법이다.
+재귀와 함께 쓰는 DP와 다르게 작은 값부터 구해나간다는 것이 특징이다.
+
+### 그래서 둘중에 누가 더 좋은데(빠른데)?
+이는 가르치는 사람마다 조금씩 달랐다.
+누구는 bottom up이 좋다고하고~ (왜냐하면 재귀를 돌때 Stack할당 이라든지 부가 작업들이 많아서) 누구는 정답은 없고 상황마다 다르다고 하시더라.
+
+사실 아직까지 문제에 잘 적용할 수 있을 자신은 없다.
+문제를 많이 풀어보는 수밖에..
