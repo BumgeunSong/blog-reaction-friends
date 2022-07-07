@@ -462,3 +462,41 @@ static func createRedSection() -> NSCollectionLayoutSection {
 코드를 살펴보면 일반적인 Group 두 개와 containerGroup 한 개, 총 3개의 그룹을 볼수 있다.
 
 ![](https://tva1.sinaimg.cn/large/e6c9d24egy1h3w20d8176j20eu0rqabb.jpg)
+
+### ContentSize에 따른 dynamic cell (UILabel)
+
+초록색 영역의 크기를 셀마다 다르게 바꾸어보자.
+
+groupSize의 withDimension만 fractional, 나머지는 estimated로 바꾸어주었다.
+
+```swift
+static func createGreenSection() -> NSCollectionLayoutSection {
+  let itemSize = NSCollectionLayoutSize(
+    widthDimension: .estimated(1),
+    heightDimension: .estimated(1)
+  )
+
+  let item = NSCollectionLayoutItem(layoutSize: itemSize)
+  item.edgeSpacing = .init(
+    leading: .fixed(10),
+    top: .fixed(10),
+    trailing: .none,
+    bottom: .none
+  )
+
+  let groupSize = NSCollectionLayoutSize(
+    widthDimension: .fractionalWidth(1),
+    heightDimension: .estimated(1)
+  )
+
+  let group = NSCollectionLayoutGroup.horizontal(layoutSize: groupSize, subitems: [item])
+  let section = NSCollectionLayoutSection(group: group)
+
+  return section
+}
+```
+
+![](https://tva1.sinaimg.cn/large/e6c9d24egy1h3xb80fztyj20eu0rqabh.jpg)
+
+estimated(1)로 설정해주어 초기 cell의 크기는 1로 그리지만, 내부 UILabel을 그릴때,  UILabel의 intrinsicContentSize에 맞추어 cell의 크기를 늘린다. ( 추측 )
+
