@@ -641,12 +641,11 @@ func solution(_ n: Int) -> Int {
 2. recursive with DP
 ~~~swift
  //recursive Dynamic(top down)             // Call stack Depth Error 주의
+var fiboArray = [0, 1]
 func solution(_ n: Int) -> Int {
     if n == 1 || n == 0 {
         return n
     }
-
-    var fiboArray = [0, 1]
 
     if n < fiboArray.count {    // 이 구문이 실행이 된다는 것은 fiboArray에 0,1 활용할 값이 있다는 뜻
         return fiboArray[n]
