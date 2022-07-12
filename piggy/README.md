@@ -721,3 +721,114 @@ func solution(_ n: Int) -> Int {
 지금은 시간을 정해놓고 그래도 안풀리면 그냥 풀이를 본다.(풀이봐도 모르겠는건 비밀)
 기업들은 수많은 지원자들을 거르는 허들로 코딩테스트를 우리에게 제공한다.
 허들만 잘 넘으면 됬지, 어떤 포즈로 허들을 넘을 지를 고민하는 것은 미련하다고 생각이 된다.
+
+## [220711] 내가 쓴글 다시보기: 메모리와 Array
+
+이번에 어떻게 운좋게 면접기회가 생겼다.
+이력서에 내 블로그를 기입해뒀는데, 옛날 글을 보니 기억이 하나도 기억이 나지않았다.
+분명 내가쓴글인데.. 질문에 대답을 못하면 낭패니 다시 살펴보자.
+
+### Swift에서 메모리와 Array
+Apple개발 문서를 기준으로 Array를 어떻게 설명했는지 메모리와 관련지어서 살펴봤다.
+
+~~~swift
+@frozen struct Array<Element>
+~~~
+frozen Struct로 Array가 구성이 되어있다.
+여기서 @frozen이란 라이브러리를 만들때 주로 사용하는 것으로 최적화를 위해 사용하는 것으로 구조체나 열거형에 사용이된다고 한다.
+이렇게 frozen이 붙은 녀석들은 열거형의 케이스 또는 구조체의 저장된 인스터스 프로퍼티를 추가, 제거, 또는 재정렬로 선언을 변경 할 수 없다.
+
+(extension으로 연산프로퍼티를 추가하는 것은 가능해보인다.)
+
+### Array의 메모리 크기
+Swift의 Array는 안의 내용물을 보관하기 위해 특정 양의 메모리를 예약한다.
+예약된 메모리를 초과하게 된다면 더 큰 영역 할당 및 복사(Array는 Struct니까)를 하게 되는데, 이때 할당되는 크기는 이전 Array의 크기의 배수로 커진다.
+
+엥?? 딱맞는 사이즈를 할당하면 되지, 왜 두배나 되는값을 할당하지? 낭비가 심한데??
+라고 생각할 수 있지만, 우리가 메모리를 할당할 때는 두가지를 생각해야한다.
+1. 메모리 할당이 실행되는 빈도
+2. 메모리 할당이 되는 크기
+
+예를 들어서 5의크기를 가진 배열이 하나의 요소가 더 추가가 되서 6이라는 공간이 필요했다고 해보자. 이때 딱맞는 크기의 메모리를 할당하면 어떻게 될까?
+array에 요소가 들어갈때마다 메모리를 할당하는 프로세스가 실행이 될것이다.
+하지만, 미리 배열의 크기를 두배로 늘려놓는다면?
+메모리가 낭비는 될수 있을지언정 할당이 실행되는 빈도가 급격히 낮아진다.
+공식문서에서는 이 전략들을 적절히 사용해서 성능을 평균화 한다고 설명이 되어있다.
+즉, 메모리 비용을 감수하더라도 할당의 빈도를 낮추는 전략을 택한 것이다.
+(아마도 2배가 적절하다고 느꼇나보다)
+
+### Custom하게 메모리 할당 크기 설정하기
+하지만, 우리가 설정한 배열에 추가되는 값의 크기를 대충 알고있다면?
+굳이 두배로 늘리지않고 추가되는 값의 크기만 늘리면 되지 않겠는가?
+역시나 애플은 이러한 작업도 가능하게 해놓았다.
+reserveCapcity(_:)를 사용하면 된다.
+~~~swift
+ reserveCapcity(_:)
+~~~
+
+### 배열안의 요소가 클래스인경우
+Array는 값타입이기 때문에 copy를 하면 복사가 된다.
+~~~swift
+var numbers = [1, 2, 3, 4, 5]
+var numbersCopy = numbers
+numbers[0] = 100
+print(numbers)
+// Prints "[100, 2, 3, 4, 5]"
+print(numbersCopy)
+// Prints "[1, 2, 3, 4, 5]"
+
+//값이 복사가 되어 원본의 변형이 사본에는 영향을 안끼침을 확인가능.
+~~~
+
+Array안에 클래스(참조타입)가 있으면 어떻게 될까?
+물론 값타입과는 다르게 작동이 된다.
+왜냐하면, 배열안의 값들은 배열 외부에 있는 개체에 대한 참조이기 때문이다.
+~~~swift
+// An integer type with reference semantics
+class IntegerReference {
+    var value = 10
+}
+var firstIntegers = [IntegerReference(), IntegerReference()]
+var secondIntegers = firstIntegers
+
+// Modifications to an instance are visible from either array
+firstIntegers[0].value = 100
+print(secondIntegers[0].value)
+// Prints "100"
+
+// Replacements, additions, and removals are still visible
+// only in the modified array 첫번째 배열만 바꿔보기.
+firstIntegers[0] = IntegerReference() //새로운 IntegerReference를 firstIntegers의 첫번째 요소로 넣는다.
+print(firstIntegers[0].value) //당연히 새로운 값이 들어왔으므로 default값인 10
+// Prints "10"    
+print(secondIntegers[0].value) //원래 가지고있던 참조인 100
+// Prints "100"  //값이 다르다.
+~~~
+
+
+### Copy On Write
+표준 라이브러리에 있는 collecion들은 모두 COW를 사용한다.
+Array는 값타입이지만, 수정전까지는 같은 스토리지를 공유한다.(여기서 스토리지가 아마 힙?)
+수정이 일어날 때 수정 중인 Array는 고유하게 소유된 자체 스토리지로 교체를하고 이 복사본은 자동으로 수정이된다. (같은 스토리지를 참조하던게 분리된다는 뜻)
+예를 들어서 numbers라는 Array를 복사한 두개의 Array가 있다고 하고, 원본 Array인 numbers의 요소를 수정하는 과정이다.
+COW에 따라서 numbers와 firstCopy, secondCopy는 같은 스토리지를 공유하고 있다.
+이때 수정이 일어나게 되면, numbers는 고유한 새로운 스토리지로 교체를 하게 된다.
+
+이 과정이.. 그래서 뭐? 중요해?
+약간?
+왜냐하면, 반대로 참조하는 CopyArray들이 없으면 위와 같이 새로운 스토리지로 교체하는 작업이 일어나지 않기 때문이다.
+배열이 자신 혼자 고유하게 있다면 굳이 새로운 스토리지로 교체할 필요가 없다.
+그냥 똑같은 스토리지에 값만 바꾸면 되니까..
+
+~~~swift
+var numbers = [1, 2, 3, 4, 5]
+var firstCopy = numbers
+var secondCopy = numbers
+
+// The storage for 'numbers' is copied here
+numbers[0] = 100
+numbers[1] = 200
+numbers[2] = 300
+// 'numbers' is [100, 200, 300, 4, 5]
+// 'firstCopy' and 'secondCopy' are [1, 2, 3, 4, 5]
+~~~
