@@ -933,3 +933,42 @@ print(ObjectIdentifier(c))
 // ObjectIdentifier(0x00000001db069cd0)
 ~~~
 
+## [220714] 내가쓴글 다시보기: iOS 뷰가 그려지는 과정
+
+### Run Loop
+View가 그려지는 과정을 이해하기 전에는 `Run Loop`라는 개념을 알아야한다.
+Run Loop는 input Source들이 관리되는 프로그래밍적인 인터페이스이다.
+Input Source에는 사용자의 입력(마우스, 키보드..) 등이 있다.
+* Timer또한 Input Source는 아니지만 처리된다.
+
+Thread들은 각각 자신의 Run Loop를 가지고 있으며, Thread를 생성할 때 자동으로 생성이 된다. 하지만, 자동으로 실행이 되지는 않는다.(Main Run Loop제외)
+
+실행된 Run Loop는 Input Source(비동기 이벤트) Timer(동기 이벤트)를 처리한다.
+여기서 우리가 잘 봐야할 것은 Main Thread가 가지고 있는 Main Run Loop이다.
+이 Run Loop가 UI처리를 담당한다.
+
+### Update Cycle
+![](https://velog.velcdn.com/images/piggy_seob/post/f1b19cc7-4fa6-4810-bcd4-6203b163f781/image.png)
+
+Run Loop로 들어온 이벤트들은 바로 처리가 되는게 아니라 Event Queue에 추가가 된다.
+
+Event Queue에 있는 Event를 Application 객체가 하나씩 가져와 앱내 object들에게 Event를 dispatch한다.
+object들은 입력을 해석하여 handler를 호출하는데 이 때, 개발자들이 작성한 코드들이 호출된다.
+여기서 **모든** handler들이 호출이 되고 나면 Main Run Loop로 시스템 제어권이 넘어오는 시점이 생기는데 이때가 Update Cycle이 시작되는 시점이다.
+
+Update Cycle에서 iOS시스템은 View와 관련된 작업들을 업데이트하기 시작한다.
+
+Constraint -> Layout -> Display
+
+즉, UI가 바뀌는 시점이 바로 이 시점이며 `모든 handler들이 호출되고 나면` 시작된다고 했으므로 실제로 UI가 그려지는 시점과 handler(우리의 코드)가 실행된 시점은 약간의 차이가 있다.
+(나는 한번도 못느꼇는데? 초당 60번의 Update Cycle이 발생된다고 함. ㅇㅇ)
+
+아무리 초당 60번의 Update Cycle이 발생한다고 해도 엄연히 차이가 있기 때문에,
+애니메이션같이 실시간으로 View의 속성을 바꾸고 그 기준으로 다시 그려야하는 경우, Cycle을 관리할 필요가 있다.
+
+### 요약 
+Event -> EventQueue -> Application object -> core object -> handler() -> (모든 handler return시) UpdateCycle !
+
+
+
+
