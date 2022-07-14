@@ -872,3 +872,64 @@ numbers[2] = 300
 공부하기 싫어서 유튜브를 뒤적거리다가 [엘리님 유튜브](https://www.youtube.com/watch?v=hU4kULhOdNE)에서 꽤나 공감이 많이 가는 영상이 올라와서 조금 정리 해봤습니다.
 시간나면 한번씩 보시면 좋겠네요~
 
+## [220713] 내가 쓴 글 다시보기: MetaType
+
+### Type이란?
+하나의 Type이란 `어떤 공통된 속성들을 가진 것을 묶어서 모아놓은 것`이라 생각한다.
+예를 들어 MBTI도 하나의 타입이 될수 있다.
+외향적인 사람들한테는 너 'E(타입)지??'
+내향적인 사람들한테는 너 'I(타입)지?' 하는 것 처럼 말이다.
+
+### Meta + Type?
+(구)FaceBook. 은 아니고 `뒤, 넘어서, 스스로` 등등의 의미를 가지고 있는데 이 중 Swift에서 쓰는 Meta Type은 `스스로`라는 의미가 가장 알맞다고 생각했다.
+
+Meta Type은 Type 그 스스로, 그 자체를 의미하는 타입이라고 생각한다.
+
+### 사용처
+타입의 타입? 타입을 추상화? 말도 어려운 얘를 어디다가 쓰냐?
+`타입 그 자체를 비교해야할 때` 주로 사용이된다.
+
+예를 들어서 MBTI가 E로 시작하는 사람들만 들어올 수 있는 인싸파티가 있다고 해보자.
+MBTI가 하나의 타입이라고 한다면, `MBTI를 가지고 있는 사람들은 하나의 인스턴스`라고 할 수 있다.
+INTP이라는 타입은 하나밖에 없지만, INTP 타입을 가지고 있는 사람은 여러명일 수 있기 때문이다.
+
+따라서, 이 파티의 입구에 있는 가드는 사람(인스턴스)을 판단하는게 아니라, 그 `사람의 타입 자체를 비교`해야한다.
+
+Swift에서는 ObjectiveIdentifier라는 고유한 String값으로 변환 시켜주기도한다.
+(주의 - 오직 클래스의 instance나 MetaType만 변환 가능)
+~~~swift
+class A { }
+struct B { }
+
+let a = A()
+let b = B()
+let c = B.self
+
+ObjectIdentifier(a) // No error
+ObjectIdentifier(b) // Error!
+ObjectIdentifier(c) // No Error
+~~~
+
+위 값은 타입별로 고유한 값이기 때문에 이를 이용해 Dictionary나 Switch Case문을 사용하면 굳이 Enum타입을 더 만들지 않아도 효율적으로 값을 찾거나 로직을 분기할 수 있다.
+
+### 추가로 알게 된 사실
+Meta Type은 recursive하다.  
+따라서 이런게 가능함.  
+~~~swift
+struct A {
+    let name: String
+}
+
+
+let a = A.self
+let b = A.Type.self
+let c = A.Type.Type.self
+print(ObjectIdentifier(a))
+print(ObjectIdentifier(b))
+print(ObjectIdentifier(c))
+
+// ObjectIdentifier(0x000000010559c2a8)
+// ObjectIdentifier(0x00000001db069cb8)
+// ObjectIdentifier(0x00000001db069cd0)
+~~~
+
