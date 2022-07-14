@@ -500,3 +500,16 @@ static func createGreenSection() -> NSCollectionLayoutSection {
 
 estimated(1)로 설정해주어 초기 cell의 크기는 1로 그리지만, 내부 UILabel을 그릴때,  UILabel의 intrinsicContentSize에 맞추어 cell의 크기를 늘린다. ( 추측 )
 
+## UICollectionViewDataSource
+
+
+## UICollectionViewDiffableDataSource
+ **`UICollectionViewDiffableDataSource` 이름이 너무나도긴 이녀석은 `UICollectionViewDataSource`를 대신해서 사용가능한 녀석이다.**
+ 그렇다면 `DataSource` 를 사용하면 되는데 왜 `DiffableDataSource`를 사용하는 것일까 ?
+ 
+ 공식홈페이지를 보면 다음과 같이 나와있다.
+ 
+ > It provides the behavior you need to manage updates to your collection view's data and UI in a simple, efficient way.
+ > collectionView의 데이터와 UI를 쉽고 효율적으로 관리할 수 있게 해줍니다.
+ 
+ 어떤 방식으로 얼마나 효율적인지 직접 겪어보도록 하자.
