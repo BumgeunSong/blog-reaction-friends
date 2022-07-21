@@ -1055,3 +1055,35 @@ AMP는 구글에서 만든 모바일 기기에서 콘텐츠를 빠르게 로딩�
 - 내가 아는 것은 말로 내뱉는 연습을 해보자.
 - 배운 것은 남들에게 공유를 해보자.(조금 더 정리가 될 것이다) 
 - 면접은 이번이 끝이 아니다. 질문과 답변들을 내 나름대로 정리해 보쟈.
+
+## DiffableDataSource - 1
+
+### DiffableDataSource
+얘는 대체 뭘까?
+The object you use to manage data and provide cells for a collection view. - 애플
+TableView 혹은 CollectionView의 데이터를 관리하고 cell을 제공하기 위한 object.
+근데 이미 우리는 dataSource를 사용하고 있지 않나?
+이 친구는 어째서 나오게 된걸까?
+
+### 탄생 배경
+애플의 표현에 따르면 단하나의 Truth Data를 가질 수 있게 하기 위해서라고 한다.
+
+우리가 일반적인 DataSource를 이용해서 CollectionView를 구현할 때를 살펴보자.
+DataSource에 있는 함수들을 이용해서 우리는 View를 그리게 된다.
+![](https://velog.velcdn.com/images/piggy_seob/post/43ca44bf-d53d-469c-9115-c2473889accf/image.png)
+
+이 함수들은 어떠한 Model 값에 의존해서 view를 그리게 된다.
+여기서 중요한 점은 UI가 가지고 있는 값과 Model이 가지고 있는 값이 차이가 날수 있다는 것이다. 이때 우리가 가끔 봤던 에러가 발생하게 된다.
+
+![](https://velog.velcdn.com/images/piggy_seob/post/0fe16ccf-e444-48e1-a542-85dee445ba63/image.png)
+
+centralize된 truth가 없다.
+
+그래서 보통 이런 에러는 `reloadData`라는 메서드를 이용해서 Controller가 가지고 있는 값(보통 DataSoure를 Controller에서 구현하므로)과 UI가 가지고 있는 값을 맞춰준다. 
+이 방법이 나쁜 것은 아니라고 애플도 인정했지만, 이보다 더 나은 방법을 제시하기 위해 나온 것이 DiffableDataSource이다.
+
+### 장점 및 단점
+
+### 사용 예시
+
+### 비교
