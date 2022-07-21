@@ -1056,7 +1056,7 @@ AMP는 구글에서 만든 모바일 기기에서 콘텐츠를 빠르게 로딩�
 - 배운 것은 남들에게 공유를 해보자.(조금 더 정리가 될 것이다) 
 - 면접은 이번이 끝이 아니다. 질문과 답변들을 내 나름대로 정리해 보쟈.
 
-## DiffableDataSource - 1
+## DiffableDataSource
 
 ### DiffableDataSource
 얘는 대체 뭘까?
@@ -1082,8 +1082,71 @@ centralize된 truth가 없다.
 그래서 보통 이런 에러는 `reloadData`라는 메서드를 이용해서 Controller가 가지고 있는 값(보통 DataSoure를 Controller에서 구현하므로)과 UI가 가지고 있는 값을 맞춰준다. 
 이 방법이 나쁜 것은 아니라고 애플도 인정했지만, 이보다 더 나은 방법을 제시하기 위해 나온 것이 DiffableDataSource이다.
 
-### 장점 및 단점
+### 사용 방법(기본)
+가장 기본적인 DiffableDataSoure를 만들어보자.
 
-### 사용 예시
+![](https://velog.velcdn.com/images/piggy_seob/post/832a1e23-42a1-4a99-9803-5543170c2083/image.png)
+
+**1. SectionIdentifierType과 itemIdentifierType 정의**
+먼저, DiffableDataSource는 `제네릭 타입을 두개 정의` 해야한다.
+여기서 정의되는 제네릭 타입은 `Section과 Item이다.`
+Section은 말그대로 CollectionView의 Section이고, Item은 이 DataSource를 채울 (우리가 Cell에 채울) Model이다.
+이때 Section에 넣는 타입과 Item은 모두 `Hashable해야한다.`
+DiffableDataSource의 원리는 현재 상태를 SnapShot을 찍은다음 비교해서 적용하는 원리인데, 값이 고유하지않으면(hashable)하지 않으면 `현재의 값과 바꿀 값을 비교할 수 없기 때문이다.`
+(마치 Equatable Protocol을 채택하지 않으면 값을 비교할 수 없는것처럼.)
+보통 Enum 값을 이용해서 SectionType을 정의하는게 보편적이다.
+
+~~~swift
+enum SectionType {
+    case main
+}
+
+struct Person: Hashable {
+    let name: String
+    let age: Int
+}
+
+var diffableDataSource: UICollectionViewDiffableDataSource<SectionType, Person>!
+~~~
+
+**2. Cell provider 정의**
+이제 Cellprovider라는 클로저를 정의 해주어야 한다.
+얘는 우리가 알던 CollectionView의 cellForItemAt을 정의해준다고 생각하면 편하다.
+따라서, 코드도 매우 흡사하다.
+여기서 중요한 점은 우리가 미리 정의한 `ItemIdentifier로 넣은 값이 클로저의 인자로 들어온다는 것`이다.
+만약에, ItemIdentifierType으로 String값을 넣었다면 Person이 아닌 String타입이 매개변수로 들어오게 된다.
+
+Ex)
+~~~swift
+self.diffableDataSource = UICollectionViewDiffableDataSource<SectionType, Person>(collectionView: collectionView) {
+    collectionView, indexPath, person in // Item으로 PersonType을 넣었기 때문에 person이 인자로 들어옴.
+    guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "PersonCell", for: indexPath)
+            as? PersonCell else { return UICollectionViewCell()}
+    cell.config(name: person.name, age: person.age)
+    return cell
+}
+~~~
+
+**3. SnapShot 정의**
+위에서 DiffableDataSource의 원리가 SnapShot으로 비교하는 것이라고 했다.
+snapShot을 만들고 item과 Section을 추가해보자.
+~~~swift
+  func snapShot(people: [Person]) {
+      var snapShot = NSDiffableDataSourceSnapshot<SectionType, Person>()              // 빈 SnapShot 생성
+      snapShot.appendSections([.main])    // Section 추가(미리 지정한 SectionType만 가능)
+      snapShot.appendItems(people)        // Item 추가.(미리 지정한 ItemType)
+      self.diffableDataSource.apply(snapShot, animatingDifferences: true)        // 적용
+  }
+~~~
+
+이제 이 함수에 매개변수를 넣어주면 될 성공이다.
+기존에 있던 Controller Extension에 있던 DataSource로직은 과감히 지워도 된다!
+
+### 사용 방법(심화)
+하지만, 위방법은 뭔가 아쉽다. CollectionView를 사용하는 이유는 뭔가... 생각해보면 Section별로 다른 Item과 flow를 주고싶을때?
+Compositional Layout과 함께 써보자.
+
+
+### 장점 및 단점
 
 ### 비교
